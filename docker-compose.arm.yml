@@ -2,7 +2,7 @@ services:
   reai:
     build:
       context: .
-      dockerfile: ${DOCKERFILE:-Dockerfile}
+      dockerfile: Dockerfile.arm
     container_name: reai
     ports:
       - "50080:8080"
@@ -11,16 +11,11 @@ services:
       - DATA_DIR=/app/data
       - LOG_LEVEL=info
       - HOME=/home/reai
-      # Uncomment and set these if you need custom values
-      # - COPILOT_CLIENT_ID=your_client_id
-      # - RATE_LIMIT=100
-      # - MAX_PROMPT_LENGTH=8192
     volumes:
-      # Persist token and data
       - reai_data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--method=GET", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

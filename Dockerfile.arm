@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app user
+# Create app user first
 RUN useradd -r -u 1001 -m reai
 
 WORKDIR /app
@@ -45,10 +45,14 @@ WORKDIR /app
 # Copy binary
 COPY --from=builder /app/bin/reai .
 
-# Set permissions and create data directory with proper ownership
+# Create data directory with proper ownership and permissions
 RUN mkdir -p /app/data && \
     chown -R reai:reai /app && \
-    chmod 755 /app/data
+    chmod 755 /app/data && \
+    chmod 755 /app/reai
+
+# Create a volume mount point with proper permissions
+VOLUME ["/app/data"]
 
 # Switch to non-root user
 USER reai

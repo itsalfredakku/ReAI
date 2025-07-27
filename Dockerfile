@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
+# Create non-root user first
 RUN useradd -r -u 1001 -m reai
 
 # Set working directory
@@ -41,10 +41,14 @@ WORKDIR /app
 # Copy the binary from builder stage
 COPY --from=builder /app/bin/reai .
 
-# Create data directory with proper permissions
+# Create data directory with proper permissions and ownership
 RUN mkdir -p /app/data && \
     chown -R reai:reai /app && \
-    chmod 755 /app/data
+    chmod 755 /app/data && \
+    chmod 755 /app/reai
+
+# Create a volume mount point with proper permissions
+VOLUME ["/app/data"]
 
 # Switch to non-root user
 USER reai
