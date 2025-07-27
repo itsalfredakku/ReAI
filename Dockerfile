@@ -1,9 +1,11 @@
 # Build stage
-FROM archlinux:latest AS builder
+FROM golang:1.22-bullseye AS builder
 
-# Update system and install Go and dependencies
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm go git ca-certificates
+# Update system and install dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -31,11 +33,13 @@ RUN go env
 RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/reai ./cmd/server
 
 # Final stage
-FROM archlinux:latest
+FROM debian:bullseye-slim
 
 # Install runtime dependencies
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm ca-certificates wget
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN useradd -r -u 1001 -m reai

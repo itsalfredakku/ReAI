@@ -1,10 +1,12 @@
 # Simplified Dockerfile for ARM/Raspberry Pi
 # Build stage
-FROM archlinux:latest AS builder
+FROM golang:1.22-bullseye AS builder
 
-# Update system and install Go and dependencies
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm go git ca-certificates
+# Update system and install dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -24,11 +26,13 @@ COPY . .
 RUN go build -o bin/reai ./cmd/server
 
 # Final stage - use a more compatible base image for ARM
-FROM archlinux:latest
+FROM debian:bullseye-slim
 
 # Install runtime dependencies
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm ca-certificates wget
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create app user
 RUN useradd -r -u 1001 -m reai
