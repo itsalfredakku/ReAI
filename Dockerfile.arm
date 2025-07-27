@@ -1,0 +1,57 @@
+# Simplified Dockerfile for ARM/Raspberry Pi
+# Build stage
+FROM archlinux:latest AS builder
+
+# Update system and install Go and dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm go git ca-certificates
+
+WORKDIR /app
+
+# Copy go module files
+COPY go.mod ./
+
+# Create empty go.sum if it doesn't exist
+RUN touch go.sum
+
+# Download dependencies (skip if no external dependencies)
+RUN go mod download || true
+
+# Copy source code
+COPY . .
+
+# Simple build command without extra flags that might cause issues on ARM
+RUN go build -o bin/reai ./cmd/server
+
+# Final stage - use a more compatible base image for ARM
+FROM archlinux:latest
+
+# Install runtime dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm ca-certificates wget
+
+# Create app user
+RUN useradd -r -u 1001 -m reai
+
+WORKDIR /app
+
+# Copy binary
+COPY --from=builder /app/bin/reai .
+
+# Set permissions
+RUN mkdir -p /app/data && \
+    chown -R reai:reai /app
+
+USER reai
+
+EXPOSE 8080
+
+ENV PORT=8080
+ENV DATA_DIR=/app/data
+ENV LOG_LEVEL=info
+
+# Simplified health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/health || exit 1
+
+CMD ["./reai"]

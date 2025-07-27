@@ -1,8 +1,9 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM archlinux:latest AS builder
 
-# Install git and ca-certificates for downloading dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+# Update system and install Go and dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm go git ca-certificates
 
 # Set working directory
 WORKDIR /app
@@ -14,21 +15,30 @@ COPY go.sum* ./
 # Download dependencies (if any)
 RUN go mod download
 
+# Debug: Show go.mod content and validate
+RUN cat go.mod && go mod verify
+
 # Copy source code
 COPY . .
+
+# Debug: Show what files are available
+RUN ls -la /app && ls -la /app/cmd/
+
+# Debug: Show Go environment
+RUN go env
 
 # Build the application with verbose output for debugging
 RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/reai ./cmd/server
 
 # Final stage
-FROM alpine:latest
+FROM archlinux:latest
 
-# Install ca-certificates and wget for HTTPS requests and health checks
-RUN apk --no-cache add ca-certificates wget
+# Install runtime dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm ca-certificates wget
 
 # Create non-root user
-RUN addgroup -g 1001 -S reai && \
-    adduser -u 1001 -S reai -G reai
+RUN useradd -r -u 1001 -m reai
 
 # Set working directory
 WORKDIR /app
