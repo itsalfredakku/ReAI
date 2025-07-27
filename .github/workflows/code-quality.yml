@@ -1,0 +1,219 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+  format:
+    name: Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Check gofmt
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "❌ The following files are not formatted with gofmt:"
+          gofmt -s -l .
+          echo ""
+          echo "Please run: go fmt ./..."
+          exit 1
+        fi
+        echo "✅ All files are properly formatted"
+
+    - name: Check goimports
+      run: |
+        go install golang.org/x/tools/cmd/goimports@latest
+        if [ "$(goimports -l . | wc -l)" -gt 0 ]; then
+          echo "❌ The following files have import issues:"
+          goimports -l .
+          echo ""
+          echo "Please run: goimports -w ."
+          exit 1
+        fi
+        echo "✅ All files have correct imports"
+
+  analyze:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Run staticcheck
+      uses: dominikh/staticcheck-action@v1.3.0
+      with:
+        version: "2023.1.6"
+
+    - name: Run ineffassign
+      run: |
+        go install github.com/gordonklaus/ineffassign@latest
+        ineffassign ./...
+
+    - name: Run misspell
+      run: |
+        go install github.com/client9/misspell/cmd/misspell@latest
+        misspell -error .
+
+  complexity:
+    name: Code Complexity
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run gocyclo
+      run: |
+        go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+        gocyclo -over 15 .
+
+    - name: Run gocognit
+      run: |
+        go install github.com/uudashr/gocognit/cmd/gocognit@latest
+        gocognit -over 20 .
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Check for missing documentation
+      run: |
+        go install golang.org/x/tools/cmd/godoc@latest
+        
+        # Check for missing package documentation
+        for pkg in $(go list ./...); do
+          if ! go doc "$pkg" >/dev/null 2>&1; then
+            echo "⚠️ Package $pkg might be missing documentation"
+          fi
+        done
+
+    - name: Generate documentation
+      run: |
+        go install golang.org/x/tools/cmd/godoc@latest
+        echo "📚 Documentation can be viewed with: godoc -http=:6060"
+
+  metrics:
+    name: Code Metrics
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Calculate code metrics
+      run: |
+        echo "📊 Code Metrics Report"
+        echo "======================"
+        
+        # Lines of code
+        echo "📏 Lines of Code:"
+        find . -name "*.go" -not -path "./vendor/*" | xargs wc -l | tail -1
+        
+        # Number of packages
+        echo "📦 Number of Packages:"
+        go list ./... | wc -l
+        
+        # Number of functions
+        echo "🔧 Number of Functions:"
+        grep -r "^func " --include="*.go" . | wc -l
+        
+        # Test coverage (if tests exist)
+        if ls *_test.go >/dev/null 2>&1; then
+          echo "🧪 Test Coverage:"
+          go test -coverprofile=coverage.out ./... >/dev/null 2>&1 || true
+          if [ -f coverage.out ]; then
+            go tool cover -func=coverage.out | tail -1
+          fi
+        fi
+
+  dependencies:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Analyze dependencies
+      run: |
+        echo "📋 Dependency Analysis"
+        echo "====================="
+        
+        # List direct dependencies
+        echo "📦 Direct Dependencies:"
+        go list -m -f '{{if not .Indirect}}{{.}}{{end}}' all
+        
+        # Check for unused dependencies
+        go install github.com/dominikh/go-tools/cmd/staticcheck@latest
+        echo ""
+        echo "🔍 Checking for unused dependencies..."
+        go mod tidy
+        
+        # Security check
+        echo ""
+        echo "🔒 Security Check:"
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./... || echo "⚠️ Vulnerabilities found - check the output above"

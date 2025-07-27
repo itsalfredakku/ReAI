@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  reai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: reai
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATA_DIR=/app/data
+      - LOG_LEVEL=info
+      # Uncomment and set these if you need custom values
+      # - COPILOT_CLIENT_ID=your_client_id
+      # - RATE_LIMIT=100
+      # - MAX_PROMPT_LENGTH=8192
+    volumes:
+      # Persist token and data
+      - reai_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - reai-network
+
+  # Optional: Add a reverse proxy like nginx
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: reai-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     # Add SSL certificates if needed
+  #     # - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - reai
+  #   networks:
+  #     - reai-network
+  #   restart: unless-stopped
+
+volumes:
+  reai_data:
+    driver: local
+
+networks:
+  reai-network:
+    driver: bridge
