@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile}
-    container_name: reai
     ports:
       - "50080:8080"
     environment:
@@ -24,30 +23,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - reai-network
-
-  # Optional: Add a reverse proxy like nginx
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: reai-nginx
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #     # Add SSL certificates if needed
-  #     # - ./ssl:/etc/nginx/ssl:ro
-  #   depends_on:
-  #     - reai
-  #   networks:
-  #     - reai-network
-  #   restart: unless-stopped
 
 volumes:
   reai_data:
     driver: local
-
-networks:
-  reai-network:
-    driver: bridge
