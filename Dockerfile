@@ -17,20 +17,11 @@ COPY go.sum* ./
 # Download dependencies (if any)
 RUN go mod download
 
-# Debug: Show go.mod content and validate
-RUN cat go.mod && go mod verify
-
 # Copy source code
 COPY . .
 
-# Debug: Show what files are available
-RUN ls -la /app && ls -la /app/cmd/
-
-# Debug: Show Go environment
-RUN go env
-
-# Build the application with verbose output for debugging
-RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/reai ./cmd/server
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/reai ./cmd/server
 
 # Final stage
 FROM debian:bullseye-slim

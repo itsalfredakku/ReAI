@@ -23,7 +23,7 @@ RUN go mod download || true
 COPY . .
 
 # Simple build command without extra flags that might cause issues on ARM
-RUN go build -o bin/reai ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/reai ./cmd/server
 
 # Final stage - use a more compatible base image for ARM
 FROM debian:bullseye-slim
