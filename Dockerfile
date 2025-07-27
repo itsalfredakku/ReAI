@@ -41,9 +41,10 @@ WORKDIR /app
 # Copy the binary from builder stage
 COPY --from=builder /app/bin/reai .
 
-# Create data directory and set permissions
+# Create data directory with proper permissions
 RUN mkdir -p /app/data && \
-    chown -R reai:reai /app
+    chown -R reai:reai /app && \
+    chmod 755 /app/data
 
 # Switch to non-root user
 USER reai

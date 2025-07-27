@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
-	"os/signal"
+	"os		slog.Info("📊 Available endpoints:")
+		slog.Info("   GET  /health              	- Health check")
+		slog.Info("   GET  /v1/models           	- List available models")
+		slog.Info("   POST /v1/completions      	- Code completions")
+		slog.Info("   POST /v1/chat/completions 	- Chat/Q&A")ignal"
 	"syscall"
 	"time"
 

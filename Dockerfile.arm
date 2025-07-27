@@ -45,10 +45,12 @@ WORKDIR /app
 # Copy binary
 COPY --from=builder /app/bin/reai .
 
-# Set permissions
+# Set permissions and create data directory with proper ownership
 RUN mkdir -p /app/data && \
-    chown -R reai:reai /app
+    chown -R reai:reai /app && \
+    chmod 755 /app/data
 
+# Switch to non-root user
 USER reai
 
 EXPOSE 8080
@@ -57,7 +59,7 @@ ENV PORT=8080
 ENV DATA_DIR=/app/data
 ENV LOG_LEVEL=info
 
-# Simplified health check
+# Simplified health check using GET method
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget --quiet --tries=1 --method=GET --spider http://localhost:${PORT}/health || exit 1
 
