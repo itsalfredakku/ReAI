@@ -7,6 +7,25 @@ RUN apk add --no-cache git ca-certificates tzdata
 # Set working directory
 WORKDIR /app
 
+# Copy go mod and sum files
+COPY go.mod ./
+COPY go.sum* ./
+
+# Download dependencies (if any)
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the application with verbose output for debugging
+RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o bin/reai ./cmd/serverolang:1.22-alpine AS builder
+
+# Install git and ca-certificates for downloading dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Set working directory
+WORKDIR /app
+
 # Copy go mod files
 COPY go.mod ./
 
