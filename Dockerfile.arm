@@ -59,6 +59,6 @@ ENV LOG_LEVEL=info
 
 # Simplified health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/health || exit 1
+    CMD wget --quiet --tries=1 --method=GET --spider http://localhost:${PORT}/health || exit 1
 
 CMD ["./reai"]
