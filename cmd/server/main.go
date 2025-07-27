@@ -74,10 +74,7 @@ func main() {
 		slog.Info("   GET  /health              	- Health check")
 		slog.Info("   GET  /v1/models           	- List available models")
 		slog.Info("   POST /v1/completions      	- Code completions")
-		slog.Info("   POST /v1/completions/stream 	- Streaming completions")
-		slog.Info("   POST /v1/chat/completions 	- Ask/Chat (Q&A)")
-		slog.Info("   POST /v1/edits           		- Code editing")
-		slog.Info("   POST /v1/agent           		- Agent tasks")
+		slog.Info("   POST /v1/chat/completions 	- Chat/Q&A")
 
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed to start", "error", err)
